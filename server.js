@@ -1,110 +1,83 @@
-const express = require('express');
-const exphbs  = require('express-handlebars');
-const bodyParser = require("body-parser");
-const path = require('path');
-const logger = require('morgan');
-const mongoose = require("mongoose");
+var express = require("express");
+var bodyParser = require("body-parser");
+var logger = require("morgan");
+var mongoose = require("mongoose");
 
+// Our scraping tools
+// Axios is a promised-based http library, similar to jQuery's Ajax method
+// It works on the client and on the server
+var axios = require("axios");
+var cheerio = require("cheerio");
 
-const app = express();
-const PORT = process.env.PORT || 8080;
+// Require all models
+var db = require("./models");
 
+var PORT = 3000;
 
-// parse application/x-www-form-urlencoded
+// Initialize Express
+var app = express();
+
+// Configure middleware
+
+// Use morgan logger for logging requests
+app.use(logger("dev"));
+// Use body-parser for handling form submissions
 app.use(bodyParser.urlencoded({ extended: true }));
-// parse application/json
-app.use(bodyParser.json());
+// Use express.static to serve the public folder as a static directory
+app.use(express.static("public"));
 
-mongoose.Promise = Promise;
-var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/scraperData"
-mongoose.connect(MONGODB_URI)
-const db = mongoose.connection
+// Connect to the Mongo DB
+mongoose.connect("mongodb://localhost/scraperData");
 
-db.on('error', err => console.log(`Mongoose connection error: ${err}`))
-// view engine setup
-db.once('open', () => console.log(`Connected to MongoDB`))
- 
-app.engine('handlebars', exphbs({defaultLayout: 'main'}));
-app.set('view engine', 'handlebars');
+// Routes
 
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, 'public')));
-
-const routes = require('./routes/html-routes')
-app.use('/', routes)
-
-
-
-app.listen(PORT, () => console.log(`Example app listening on port ${PORT}!`))
-
-
-app.get("/all", function(req, res) {
-  // Find all results from the scrapedData collection in the db
-  db.scrapedData.find({}, function(error, found) {
-    // Throw any errors to the console
-    if (error) {
-      console.log(error);
-    }
-    // If there are no errors, send the data to the browser as json
-    else {
-      res.json(found);
-    }
-  });
-});
-
-// Scrape data from one site and place it into the mongodb db
+// A GET route for scraping the echoJS website
 app.get("/scrape", function(req, res) {
-  // Make a request for the news section of `ycombinator`
-  request("https://www.gamestop.com/deals", function(error, response, html) {
-    // Load the html body from request into cheerio
-    var $ = cheerio.load(html);
-    // For each element with a "title" class
-    $("div.product").each(function(i, element) {
-      // Save the text and href of each link enclosed in the current element
-      var title = $(element).children("div.product_name_system").children("h3.product_title").text();
-      var link = "https://www.gamestop.com" +  $(element).children("div.product_image").children("a").attr("href");
-    var price =  $(element).children("div.product_pricing").children("div.product_pricing_info").children("p.price").text(); 
-    
-     console.log(title)
-    console.log(link)
-    console.log(price)
-    
-     // If this found element had both a title and a link
-      if (title && link && price) {
-        console.log("insertion")
-        // Insert the data in the scrapedData db
-    if(db.scrapedData.find())
-        db.scrapedData.insert({
-          title: title,
-          price: price,
-          link: link
-        },
-        function(err, inserted) {
-          if (err) {
-            // Log the error if one is encountered during the query
-            console.log(err);
-          }
-          else {
-            // Otherwise, log the inserted data
-         //   console.log(inserted + "okay");
-          }
+  axios.get('https://www.gamestop.com/deals').then(function(response) {
+    // Then, we load that into cheerio and save it to $ for a shorthand selector
+    var $ = cheerio.load(response.data);
+
+    // Now, we grab every h2 within an Game tag, and do the following:
+    $('div.new_product').each(function(i,element)  {
+      var product = {}
+      product.title = $(element).children("div.product_name_system").children("h3.product_title").text();
+      product.link = "https://www.gamestop.com" +  $(element).children("div.product_image").children("a").attr("href");
+     // product.price =  $(element).children("div.product_pricing").children("div.product_pricing_info").children("p.price").text(); 
+      res.json(product)
+      console.log(product.title)
+    })
+      // Create a new Game using the `result` object built from scraping
+      db.Game.create(product)
+        .then(function() {
+          // View the added result in the console
+          console.log(scraperdata);
+        })
+        .catch(function(err) {
+          // If an error occurred, send it to the client
+          return res.json(err);
         });
-      }
-      
-    });
-    
+    // If we were able to successfully scrape and save an Game, send a message to the client
+    res.send("Scrape Complete");
   });
+});
 
-  // Send a "Scrape Complete" message to the browser
-
-  
+// Route for getting all Games from the db
+app.get("/Games", function(req, res) {
+  // Grab every document in the Games collection
+  db.Game.find({})
+    .then(function(scraperdata) {
+      // If we were able to successfully find Games, send them back to the client
+      res.json(scraperdata);
+    })
+    .catch(function(err) {
+      // If an error occurred, send it to the client
+      res.json(err);
+    });
 });
 
 
 
-// Listen on port 3000
-app.listen(3000, function() {
-  console.log("App running on port 3000!");
+// Start the server
+app.listen(PORT, function() {
+  console.log("App running on port " + PORT + "!");
 });
