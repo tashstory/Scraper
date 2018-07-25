@@ -52,7 +52,7 @@ console.log(html)
       games.title =  $(element).children("div.product_name_system").children("h3.product_title").text();
       games.link = "https://www.gamestop.com/" +  $(element).children("div.product_image").children("a").attr("href");
       console.log(games)
-      games.price = "$15"// $(element).children("div.product_pricing").children("div.product_pricing_info").children("p.price").text(); 
+      games.price =  $(element).children("div.product_pricing").children("div.product_pricing_info").children("p.price").text(); 
       games.image =" https://www.gamestop.com/"+  $(element).children("div.product_image").children("a").children("img").attr("src");
       console.log(games.price)
     
@@ -74,6 +74,7 @@ console.log(html)
 // If we were able to successfully scrape and save an Game, send a message to the client
 res.send("Scrape Complete");
 });
+
 
 // Route for getting all Games from the db
 app.get("/Games", function(req, res) {

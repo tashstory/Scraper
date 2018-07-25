@@ -1,5 +1,7 @@
 // Grab the articles as a json
+$.get("/scrape")
 $(document).on("click", "#hotDeals", function() {
+
 
 
 $.getJSON("/Games", function(data) {
@@ -16,7 +18,7 @@ $.getJSON("/Games", function(data) {
     }
     if(repeat === false){
       
-      $("#Games").append("<p data-id='" + data[i]._id + "'>" + data[i].title + "<br />"+"<img src='"+data[i].image + "'>" + "<br>"+"<a href='" +data[i].link +"' target='_blank'>"+data[i].link+"</a>" + "<br />" + data[i].price + "</p>");
+      $("#Games").append("<p  data-id='" + data[i]._id + "'>" + data[i].title + "<br />"+"<img src='"+data[i].image + "'>" + "<br>"+"<a href='" +data[i].link +"' target='_blank'>"+data[i].link+"</a>" + "<br />" + data[i].price + "</p>"+"<hr>");
      repeatcheck.push(data[i].title)
     }
    
