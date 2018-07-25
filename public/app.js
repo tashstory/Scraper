@@ -1,13 +1,30 @@
 // Grab the articles as a json
-$.getJSON("/articles", function(data) {
+$(document).on("click", "#hotDeals", function() {
+
+
+$.getJSON("/Games", function(data) {
+  
   // For each one
+  var repeatcheck = [""];
   for (var i = 0; i < data.length; i++) {
+    var repeat = false;
     // Display the apropos information on the page
-    $("#articles").append("<p data-id='" + data[i]._id + "'>" + data[i].title + "<br />" + data[i].link + "</p>");
+    for(var j=0; j<repeatcheck.length; j++){
+      if(data[i].title===repeatcheck[j]){
+        repeat = true;
+      }
+    }
+    if(repeat === false){
+      
+      $("#Games").append("<p data-id='" + data[i]._id + "'>" + data[i].title + "<br />"+"<img src='"+data[i].image + "'>" + "<br>"+"<a href='" +data[i].link +"' target='_blank'>"+data[i].link+"</a>" + "<br />" + data[i].price + "</p>");
+     repeatcheck.push(data[i].title)
+    }
+   
+    
   }
 });
-
-
+})
+/*
 // Whenever someone clicks a p tag
 $(document).on("click", "p", function() {
   // Empty the notes from the note section
@@ -18,7 +35,7 @@ $(document).on("click", "p", function() {
   // Now make an ajax call for the Article
   $.ajax({
     method: "GET",
-    url: "/articles/" + thisId
+    url: "/Games/" + thisId
   })
     // With that done, add the note information to the page
     .then(function(data) {
@@ -69,4 +86,6 @@ $(document).on("click", "#savenote", function() {
   // Also, remove the values entered in the input and textarea for note entry
   $("#titleinput").val("");
   $("#bodyinput").val("");
+  
 });
+*/

@@ -8,7 +8,7 @@ var mongoose = require("mongoose");
 // It works on the client and on the server
 var axios = require("axios");
 var cheerio = require("cheerio");
-
+var request = require("request")
 // Require all models
 var db = require("./models");
 
@@ -29,36 +29,50 @@ app.use(express.static("public"));
 // Connect to the Mongo DB
 mongoose.connect("mongodb://localhost/scraperData");
 
-// Routes
+var url = "mongodb://localhost/scraperData";
+ 
+// create a client to mongodb
+
 
 // A GET route for scraping the echoJS website
 app.get("/scrape", function(req, res) {
-  axios.get('https://www.gamestop.com/deals').then(function(response) {
+  
+  mongoose.connection.db.dropDatabase();
+  console.log("in")
+  var games = {}
+ 
+  request('https://www.gamestop.com/deals', function(error, response, html) {
     // Then, we load that into cheerio and save it to $ for a shorthand selector
-    var $ = cheerio.load(response.data);
+    var $ = cheerio.load(html);
+console.log(html)
 
     // Now, we grab every h2 within an Game tag, and do the following:
-    $('div.new_product').each(function(i,element)  {
-      var product = {}
-      product.title = $(element).children("div.product_name_system").children("h3.product_title").text();
-      product.link = "https://www.gamestop.com" +  $(element).children("div.product_image").children("a").attr("href");
-     // product.price =  $(element).children("div.product_pricing").children("div.product_pricing_info").children("p.price").text(); 
-      res.json(product)
-      console.log(product.title)
-    })
-      // Create a new Game using the `result` object built from scraping
-      db.Game.create(product)
-        .then(function() {
-          // View the added result in the console
-          console.log(scraperdata);
-        })
-        .catch(function(err) {
-          // If an error occurred, send it to the client
-          return res.json(err);
-        });
-    // If we were able to successfully scrape and save an Game, send a message to the client
-    res.send("Scrape Complete");
+    $('div.product').each(function(i,element)  {
+      
+      games.title =  $(element).children("div.product_name_system").children("h3.product_title").text();
+      games.link = "https://www.gamestop.com/" +  $(element).children("div.product_image").children("a").attr("href");
+      console.log(games)
+      games.price = "$15"// $(element).children("div.product_pricing").children("div.product_pricing_info").children("p.price").text(); 
+      games.image =" https://www.gamestop.com/"+  $(element).children("div.product_image").children("a").children("img").attr("src");
+      console.log(games.price)
+    
+      db.Game.create(games)
+  .then(function() {
+    // View the added result in the console
+    console.log(scraperdata);
+  })
+  .catch(function(err) {
+    // If an error occurred, send it to the client
+    return res.json(err);
   });
+      // Create a new Game using the `result` object built from scraping
+     
+  });
+  
+  })
+  
+// If we were able to successfully scrape and save an Game, send a message to the client
+res.send("Scrape Complete");
 });
 
 // Route for getting all Games from the db
@@ -73,6 +87,7 @@ app.get("/Games", function(req, res) {
       // If an error occurred, send it to the client
       res.json(err);
     });
+    
 });
 
 
